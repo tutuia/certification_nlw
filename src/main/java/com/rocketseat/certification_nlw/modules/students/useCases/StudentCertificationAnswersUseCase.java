@@ -3,6 +3,7 @@ package com.rocketseat.certification_nlw.modules.students.useCases;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,11 @@ import org.springframework.stereotype.Service;
 import com.rocketseat.certification_nlw.modules.questions.entities.QuestionEntity;
 import com.rocketseat.certification_nlw.modules.questions.repositories.QuestionRepository;
 import com.rocketseat.certification_nlw.modules.students.dto.StudentCertificationAnswerDTO;
+import com.rocketseat.certification_nlw.modules.students.dto.VerifyHasCerticicationDTO;
 import com.rocketseat.certification_nlw.modules.students.entities.AnswersCertificatioEntity;
 import com.rocketseat.certification_nlw.modules.students.entities.CertificationStudentEntity;
 import com.rocketseat.certification_nlw.modules.students.entities.StudentEntity;
+import com.rocketseat.certification_nlw.modules.students.repositories.CertificationStudentRepository;
 import com.rocketseat.certification_nlw.modules.students.repositories.StudentRepository;
 
 @Service
@@ -24,9 +27,24 @@ public class StudentCertificationAnswersUseCase {
     @Autowired
     private QuestionRepository questionRepository;
 
-    public StudentCertificationAnswerDTO execute(StudentCertificationAnswerDTO dto){
+    @Autowired
+    private CertificationStudentRepository certificationStudentRepository;
+
+    @Autowired
+    private VerifyIfHasCertificatioUseCase verifyIfHasCertificatioUseCase;
+
+    public CertificationStudentEntity execute(StudentCertificationAnswerDTO dto) throws Exception{
+
+        var hasCertification = this.verifyIfHasCertificatioUseCase.execute(new VerifyHasCerticicationDTO(dto.getEmail(),dto.getTechnology()));
+
+        if(hasCertification){
+            throw new Exception("voce ja tirou sua certificacao");
+        }
         
         List<QuestionEntity> questionsEntity = questionRepository.findByTechnology(dto.getTechnology());
+        List<AnswersCertificatioEntity> answersCertifications = new ArrayList<>();
+
+        AtomicInteger correctAnswers = new AtomicInteger(0);
 
         dto.getQuestionAnswers()
             .stream().forEach(questionAnswer -> {
@@ -38,9 +56,17 @@ public class StudentCertificationAnswersUseCase {
 
                 if(findCorrectAlternative.getId().equals(questionAnswer.getAlternativeID())){
                     questionAnswer.setCorrect(true);
+                    correctAnswers.incrementAndGet();
                 }else{
                     questionAnswer.setCorrect(false);
                 }
+
+                var answersCertificationEntity = AnswersCertificatioEntity.builder()
+                .answearID(questionAnswer.getAlternativeID())
+                .questionID(questionAnswer.getQuestionID())
+                .isCorrect(questionAnswer.isCorrect()).build();
+                
+                answersCertifications.add(answersCertificationEntity);
             });
         //buscar as alternativas corretas das perguntas
             // - correta ou incorreta
@@ -56,14 +82,22 @@ public class StudentCertificationAnswersUseCase {
             studentID = student.get().getId();
         }
 
-        List<AnswersCertificatioEntity> answersCertifications = new ArrayList<>();
-
         CertificationStudentEntity certificationStudentEntity = 
             CertificationStudentEntity.builder()
             .technology(dto.getTechnology())
             .studentID(studentID)
-        //    .answearsCertificatioEntity(answersCertifications)
+            .grade(correctAnswers.get())
             .build();
-        return dto;
+     
+        var certificationStudentCreated = certificationStudentRepository.save(certificationStudentEntity);
+       
+        answersCertifications.stream().forEach(answerCertification ->{
+            answerCertification.setCertificationID(certificationStudentEntity.getId());
+            answerCertification.setCertificationStudentEntity(certificationStudentEntity);
+        });
+
+        certificationStudentEntity.setAnswearsCertificatioEntity(answersCertifications);
+        certificationStudentRepository.save(certificationStudentEntity);
+        return certificationStudentCreated;
     }
 }
