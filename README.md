@@ -19,4 +19,4 @@ A aplicacao foi desenvolvida em Java 17 utilizando o framework Spring Boot 3.2.2
 
 ## Exemplos de requisicoes
 
-[Exemplos de requisicoes] (https://github.com/tutuia/certification_nlw/imagens)
+[Exemplos de requisicoes](https://github.com/tutuia/certification_nlw/tree/main/imagens)
