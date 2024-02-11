@@ -15,7 +15,7 @@ A aplicacao foi desenvolvida em Java 17 utilizando o framework Spring Boot 3.2.2
 
 - Executar o comando docker-compose up -d 
 - Executar a aplicacao 
-- Na primeira execucao e sempre que apagar as tabelas questions e alternatives, com a aplicacao em execucao, executar a classe CreateSeed. Isso vai fazer com que as tabelas de alternativas e questoes sejam criadas e carregadas com os dados contidos no arquivo create.sql 
+- Na primeira execucao e (sempre que apagar as tabelas 'questions' e 'alternatives'): com a aplicacao em execucao, executar a classe CreateSeed. Isso vai fazer com que as tabelas de alternativas e questoes sejam criadas e carregadas com os dados contidos no arquivo create.sql 
 
 ## Exemplos de requisicoes
 
